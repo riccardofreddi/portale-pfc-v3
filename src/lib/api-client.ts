@@ -109,6 +109,12 @@ export const api = {
     list: () => apiFetch<{ preferiti: string[] }>('/api/preferiti'),
     toggle: (filePath: string) => apiFetch<{ ok: boolean; isPreferito: boolean }>('/api/preferiti', { method: 'POST', body: JSON.stringify({ filePath }) }),
   },
+  push: {
+    fcmRegister: (token: string, device?: string) =>
+      apiFetch('/api/push/fcm', { method: 'POST', body: JSON.stringify({ token, device }) }),
+    fcmUnregister: (token: string) =>
+      apiFetch('/api/push/fcm', { method: 'DELETE', body: JSON.stringify({ token }) }),
+  },
   audit: {
     meList: (limit?: number) => {
       const q = limit ? `?limit=${limit}` : ''

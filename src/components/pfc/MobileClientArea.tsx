@@ -13,6 +13,7 @@ import MobileNotifiche from '@/components/pfc/MobileNotifiche'
 import PreviewModal from '@/components/pfc/PreviewModal'
 import { FolderOpen, MessageSquare, Briefcase, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { setupPushListeners } from '@/lib/push'
 
 const TABS: { id: ClienteTab; label: string; icon: React.ElementType }[] = [
   { id: 'archivio', label: 'Archivio', icon: FolderOpen },
@@ -48,6 +49,18 @@ export default function MobileClientArea() {
     }
     check()
   }, [setUser, setLoadingUser])
+
+  // Listener push native (FCM) — solo su device nativo (Android/iOS).
+  useEffect(() => {
+    setupPushListeners((url) => {
+      // Tap su notifica: vai alla schermata Notifiche (o all'url se presente).
+      if (url && url !== '/') {
+        window.location.href = url
+      } else {
+        setClienteTab('attivita')
+      }
+    })
+  }, [setClienteTab])
 
   // Poll notifications
   useEffect(() => {
