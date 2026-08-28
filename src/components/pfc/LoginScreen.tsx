@@ -142,8 +142,19 @@ export default function LoginScreen() {
         </div>
 
         <p className="text-center text-slate-500 text-xs mt-4">
-          Studio commerciale PFC — Portale riservato
+                    Studio commerciale PFC — Portale riservato
         </p>
+
+        {/* Settings button */}
+        <div className="flex justify-center mt-3">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-500 transition-colors"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Configura URL Backend
+          </button>
+        </div>
       </div>
     </div>
   )
