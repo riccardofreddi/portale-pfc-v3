@@ -18,7 +18,6 @@ export default function MobileTopBar() {
   const setShowNotifPanel = usePfcStore((s) => s.setShowNotifPanel)
   const setSettingsOpen = usePfcStore((s) => s.setSettingsOpen)
   const setUser = usePfcStore((s) => s.setUser)
-  const setLoadingUser = usePfcStore((s) => s.setLoadingUser)
 
   async function handleLogout() {
     try {
@@ -26,11 +25,12 @@ export default function MobileTopBar() {
     } catch {
       // ignore
     }
-    setUser(null); window.location.href = "/"
+    setUser(null)
+    window.location.href = '/'
+  }
 
   return (
     <header className="sticky top-0 z-40 h-14 flex items-center justify-between px-4 glass-card border-b border-white/40">
-      {/* Logo + Title */}
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-sm">
           <span className="text-white font-extrabold text-sm tracking-tight">PF</span>
@@ -38,9 +38,7 @@ export default function MobileTopBar() {
         <span className="font-bold text-slate-800 text-base">Portale PFC</span>
       </div>
 
-      {/* Right actions */}
       <div className="flex items-center gap-1">
-        {/* Notifications */}
         <button
           onClick={() => setShowNotifPanel(true)}
           className="relative flex items-center justify-center w-11 h-11 -mr-1 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors"
@@ -54,7 +52,6 @@ export default function MobileTopBar() {
           )}
         </button>
 
-        {/* Settings */}
         <button
           onClick={() => setSettingsOpen(true)}
           className="flex items-center justify-center w-11 h-11 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors"
@@ -63,7 +60,6 @@ export default function MobileTopBar() {
           <Settings className="w-5 h-5" />
         </button>
 
-        {/* User avatar dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
