@@ -1,13 +1,21 @@
-/** API client per il frontend mobile — URL configurabile. */
+/** API client per il frontend mobile — URL backend fisso. */
+
+// URL di default del backend PFC v2. Il cliente NON deve mai configurarlo.
+// (Le variabili NEXT_PUBLIC_* non vengono inline-ate in modo affidabile dallo
+//  static export di Next 16/Turbopack, quindi lo codifichiamo qui come costante.)
+const DEFAULT_API_URL = 'https://portale-pfc-v2.vercel.app'
 
 function getBaseUrl(): string {
-  if (typeof window === 'undefined') return ''
-  const stored = localStorage.getItem('pfc_api_url')
-  if (stored) {
-    const url = stored.replace(/\/+$/, '')
-    return url
+  // 1) Override via env di build (se lo static export lo rende disponibile)
+  const envUrl = (process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/+$/, '')
+  if (envUrl) return envUrl
+  // 2) Override di debug locale (solo sviluppo, mai esposto al cliente)
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('pfc_api_url')
+    if (stored) return stored.replace(/\/+$/, '')
   }
-  return ''
+  // 3) Default fisso
+  return DEFAULT_API_URL.replace(/\/+$/, '')
 }
 
 async function apiFetch<T = unknown>(url: string, opts?: RequestInit): Promise<T> {
@@ -136,15 +144,4 @@ export const api = {
     return apiFetch<{ results: Array<Record<string, unknown>> }>(`/api/ricerca?${params}`)
   },
   setup: () => apiFetch('/api/setup'),
-}
-
-/** Helper to get/set the backend URL */
-export function getApiUrl(): string {
-  if (typeof window === 'undefined') return ''
-  return localStorage.getItem('pfc_api_url') ?? ''
-}
-
-export function setApiUrl(url: string) {
-  if (typeof window === 'undefined') return
-  localStorage.setItem('pfc_api_url', url.replace(/\/+$/, ''))
 }

@@ -3,7 +3,7 @@
 import { api } from '@/lib/api-client'
 import { usePfcStore } from '@/store/pfc'
 import { getInitials } from '@/lib/pfc-utils'
-import { Bell, Settings, LogOut } from 'lucide-react'
+import { Bell, LogOut } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,6 @@ export default function MobileTopBar() {
   const user = usePfcStore((s) => s.user)
   const nNotifiche = usePfcStore((s) => s.nNotifiche)
   const setShowNotifPanel = usePfcStore((s) => s.setShowNotifPanel)
-  const setSettingsOpen = usePfcStore((s) => s.setSettingsOpen)
   const setUser = usePfcStore((s) => s.setUser)
 
   async function handleLogout() {
@@ -50,14 +49,6 @@ export default function MobileTopBar() {
               {nNotifiche > 99 ? '99+' : nNotifiche}
             </span>
           )}
-        </button>
-
-        <button
-          onClick={() => setSettingsOpen(true)}
-          className="flex items-center justify-center w-11 h-11 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors"
-          aria-label="Impostazioni"
-        >
-          <Settings className="w-5 h-5" />
         </button>
 
         <DropdownMenu>

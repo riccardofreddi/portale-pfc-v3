@@ -10,7 +10,6 @@ import MobileMessaggi from '@/components/pfc/cliente/MobileMessaggi'
 import MobileCassetto from '@/components/pfc/cliente/MobileCassetto'
 import MobileAttivita from '@/components/pfc/cliente/MobileAttivita'
 import MobileNotifiche from '@/components/pfc/MobileNotifiche'
-import SettingsScreen from '@/components/pfc/SettingsScreen'
 import PreviewModal from '@/components/pfc/PreviewModal'
 import { FolderOpen, MessageSquare, Briefcase, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -83,7 +82,6 @@ export default function MobileClientArea() {
     return (
       <>
         <LoginScreen />
-        <SettingsScreen />
       </>
     )
   }
@@ -150,7 +148,6 @@ export default function MobileClientArea() {
 
       {/* Overlays */}
       <MobileNotifiche />
-      <SettingsScreen />
       <PreviewModal />
     </div>
   )

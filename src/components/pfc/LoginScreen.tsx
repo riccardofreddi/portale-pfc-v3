@@ -4,11 +4,10 @@ import { useState, type FormEvent } from 'react'
 import { api } from '@/lib/api-client'
 import { usePfcStore } from '@/store/pfc'
 import { toast } from 'sonner'
-import { Loader2, Eye, EyeOff, Settings } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginScreen() {
   const setUser = usePfcStore((s) => s.setUser)
-  const setSettingsOpen = usePfcStore((s) => s.setSettingsOpen)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -132,17 +131,6 @@ export default function LoginScreen() {
           <div className="text-center mt-7 pt-5 border-t border-slate-200">
             <p className="text-xs text-slate-400">Portale sicuro e riservato · Tutti i diritti riservati</p>
           </div>
-        </div>
-
-        {/* Settings button */}
-        <div className="flex justify-center mt-4">
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="flex items-center gap-1.5 text-xs text-slate-400/70 hover:text-emerald-400 transition-colors"
-          >
-            <Settings className="w-3.5 h-3.5" />
-            Configura URL Backend
-          </button>
         </div>
       </div>
     </div>
