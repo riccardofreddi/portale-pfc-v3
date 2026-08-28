@@ -1,20 +1,13 @@
-/** API client per il frontend mobile — URL backend fisso. */
+/** API client per il frontend mobile — URL backend fisso e non modificabile. */
 
-// URL di default del backend PFC v2. Il cliente NON deve mai configurarlo.
-// (Le variabili NEXT_PUBLIC_* non vengono inline-ate in modo affidabile dallo
-//  static export di Next 16/Turbopack, quindi lo codifichiamo qui come costante.)
+// URL del backend PFC v2. È volutamente HARDCODED e non esposto da nessuna UI:
+// il cliente non deve (e non può) modificarlo. Se serve cambiarlo, si aggiorna
+// questa costante e si rifà la build nativa.
 const DEFAULT_API_URL = 'https://portale-pfc-v2.vercel.app'
 
 function getBaseUrl(): string {
-  // 1) Override via env di build (se lo static export lo rende disponibile)
-  const envUrl = (process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/+$/, '')
-  if (envUrl) return envUrl
-  // 2) Override di debug locale (solo sviluppo, mai esposto al cliente)
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('pfc_api_url')
-    if (stored) return stored.replace(/\/+$/, '')
-  }
-  // 3) Default fisso
+  // L'URL è fisso. Non leggiamo alcun override (env/localStorage) lato client
+  // per evitare che resti "ancora configurabile" su device già installati.
   return DEFAULT_API_URL.replace(/\/+$/, '')
 }
 
