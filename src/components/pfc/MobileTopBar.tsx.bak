@@ -26,7 +26,8 @@ export default function MobileTopBar() {
     } catch {
       // ignore
     }
-    setUser(null); window.location.href = "/"
+    setUser(null)
+  }
 
   return (
     <header className="sticky top-0 z-40 h-14 flex items-center justify-between px-4 glass-card border-b border-white/40">
