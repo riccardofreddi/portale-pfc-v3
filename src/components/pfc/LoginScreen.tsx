@@ -1,31 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { api } from '@/lib/api-client'
 import { usePfcStore } from '@/store/pfc'
 import { toast } from 'sonner'
 import { Loader2, Eye, EyeOff, Settings } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 export default function LoginScreen() {
   const setUser = usePfcStore((s) => s.setUser)
-  const setLoadingUser = usePfcStore((s) => s.setLoadingUser)
   const setSettingsOpen = usePfcStore((s) => s.setSettingsOpen)
-
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!username.trim() || !password.trim()) {
+    if (!username || !password) {
       toast.error('Inserisci username e password')
       return
     }
     setLoading(true)
     try {
-      const res = await api.auth.login(username.trim(), password.trim())
+      const res = await api.auth.login(username, password)
       if (res.ok) {
         const me = await api.auth.me()
         if (me.user && me.user.role === 'client') {
@@ -36,120 +33,112 @@ export default function LoginScreen() {
           await api.auth.logout()
         }
       } else {
-        toast.error(res.error || 'Credenziali non valide')
+        toast.error(res.error ?? 'Credenziali non valide')
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Errore di connessione'
-      toast.error(message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore di login')
     } finally {
       setLoading(false)
-      setLoadingUser(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900">
-      <div className="w-full max-w-sm">
-        <div className="glass-card rounded-2xl p-6 sm:p-8 shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 relative overflow-hidden">
+      {/* Particelle di sfondo */}
+      <div className="absolute top-[-80px] left-[-80px] w-[250px] h-[250px] rounded-full bg-emerald-500/15 blur-[60px] animate-pulse"></div>
+      <div className="absolute bottom-[-100px] right-[-100px] w-[300px] h-[300px] rounded-full bg-emerald-500/15 blur-[60px] animate-pulse" style={{ animationDelay: '3s' }}></div>
+      <div className="absolute top-[40%] left-1/2 w-[150px] h-[150px] rounded-full bg-blue-500/10 blur-[60px] animate-pulse" style={{ animationDelay: '6s' }}></div>
+
+      {/* Card Login */}
+      <div className="relative z-10 w-full max-w-[380px]">
+        <div className="bg-white/97 backdrop-blur-xl rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.25)] p-9 sm:p-10 animate-[cardEnter_0.6s_cubic-bezier(0.16,1,0.3,1)]">
+          <style>{`
+            @keyframes cardEnter {
+              from { opacity: 0; transform: translateY(20px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}</style>
+
           {/* Logo */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-              <span className="text-white font-extrabold text-2xl tracking-tight">PF</span>
+          <div className="text-center mb-7">
+            <div className="w-16 h-16 mx-auto mb-3.5 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-extrabold text-[26px] tracking-tight shadow-[0_6px_20px_rgba(16,185,129,0.35)]">
+              PF
             </div>
+            <h1 className="text-xl font-bold text-slate-800 tracking-tight">Portale Documenti</h1>
+            <p className="text-[13px] text-slate-500 mt-0.5">Accesso riservato ai clienti</p>
           </div>
 
-          <h1 className="text-xl font-bold text-center text-slate-800 mb-1">Portale PFC</h1>
-          <p className="text-sm text-slate-500 text-center mb-6">Accedi al tuo spazio documentale</p>
+          {/* Badge informativo */}
+          <div className="text-center mb-6">
+            <p className="text-[13px] font-semibold text-emerald-700">I tuoi documenti fiscali, sempre con te.</p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1.5">
-                Username
-              </label>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-[18px]">
+            <div className="space-y-[7px]">
+              <label className="block text-[13px] font-semibold text-slate-600">Username</label>
               <input
-                id="username"
                 type="text"
                 autoComplete="username"
                 autoCapitalize="none"
+                placeholder="Inserisci il tuo username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Il tuo username"
-                className={cn(
-                  'w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-900 text-base',
-                  'placeholder:text-slate-400 transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400',
-                  'disabled:opacity-50 disabled:cursor-not-allowed'
-                )}
                 disabled={loading}
+                autoFocus
+                className="w-full px-4 py-[15px] text-base border-2 border-slate-200 rounded-[14px] bg-slate-50 text-slate-800 outline-none transition-all duration-200 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 placeholder:text-slate-300"
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
-                Password
-              </label>
+            <div className="space-y-[7px]">
+              <label className="block text-[13px] font-semibold text-slate-600">Password</label>
               <div className="relative">
                 <input
-                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
+                  placeholder="Inserisci la tua password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="La tua password"
-                  className={cn(
-                    'w-full h-12 px-4 pr-12 rounded-xl border border-slate-200 bg-white text-slate-900 text-base',
-                    'placeholder:text-slate-400 transition-all duration-200',
-                    'focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400',
-                    'disabled:opacity-50 disabled:cursor-not-allowed'
-                  )}
                   disabled={loading}
+                  className="w-full px-4 py-[15px] pr-12 text-base border-2 border-slate-200 rounded-[14px] bg-slate-50 text-slate-800 outline-none transition-all duration-200 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 placeholder:text-slate-300"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors p-1"
                   tabIndex={-1}
                   aria-label={showPassword ? 'Nascondi password' : 'Mostra password'}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className={cn(
-                'w-full h-12 rounded-xl font-semibold text-white text-base',
-                'bg-gradient-to-r from-emerald-600 to-emerald-500',
-                'hover:from-emerald-700 hover:to-emerald-600',
-                'active:scale-[0.98] transition-all duration-200',
-                'shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35',
-                'disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100',
-                'flex items-center justify-center gap-2'
-              )}
+              disabled={loading || !username || !password}
+              className="w-full py-4 text-base font-bold text-white bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-[14px] shadow-[0_4px_12px_rgba(16,185,129,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] active:scale-95 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] mt-1.5"
             >
               {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Accesso...</span>
-                </>
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" /> Accesso in corso...
+                </span>
               ) : (
-                <span>Accedi</span>
+                'Accedi al Portale'
               )}
             </button>
           </form>
+
+          <div className="text-center mt-7 pt-5 border-t border-slate-200">
+            <p className="text-xs text-slate-400">Portale sicuro e riservato · Tutti i diritti riservati</p>
+          </div>
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-4">
-                    Studio commerciale PFC — Portale riservato
-        </p>
-
         {/* Settings button */}
-        <div className="flex justify-center mt-3">
+        <div className="flex justify-center mt-4">
           <button
             onClick={() => setSettingsOpen(true)}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-500 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-400/70 hover:text-emerald-400 transition-colors"
           >
             <Settings className="w-3.5 h-3.5" />
             Configura URL Backend
