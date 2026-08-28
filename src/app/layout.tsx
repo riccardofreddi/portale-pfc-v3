@@ -9,12 +9,20 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Portale PFC — Documenti Clienti",
+  title: "Portale PFC - Documenti Clienti",
   description: "App nativa per il portale documenti clienti dello Studio PFC.",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Portale PFC",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icon-192.png",
   },
 };
 
@@ -38,6 +46,11 @@ export default function RootLayout({
       >
         {children}
         <SonnerToaster position="top-center" richColors closeButton />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`,
+          }}
+        />
       </body>
     </html>
   );
