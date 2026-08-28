@@ -4,12 +4,13 @@ import { useState } from 'react'
 import { api } from '@/lib/api-client'
 import { usePfcStore } from '@/store/pfc'
 import { toast } from 'sonner'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function LoginScreen() {
   const setUser = usePfcStore((s) => s.setUser)
   const setLoadingUser = usePfcStore((s) => s.setLoadingUser)
+  const setSettingsOpen = usePfcStore((s) => s.setSettingsOpen)
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')

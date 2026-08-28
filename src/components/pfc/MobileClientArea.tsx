@@ -80,7 +80,12 @@ export default function MobileClientArea() {
   }
 
   if (!user) {
-    return <LoginScreen />
+    return (
+      <>
+        <LoginScreen />
+        <SettingsScreen />
+      </>
+    )
   }
 
   function renderTabContent() {
