@@ -64,10 +64,11 @@ export default function MobileNotifiche() {
   }, [showNotifPanel, loadNotifiche])
 
   async function handleSegnaLetta(id: string) {
- try {
+    try {
       await api.notifiche.segnaLetta(id)
       setNotifiche((prev) => prev.map((n) => (n.id === id ? { ...n, letta: true } : n)))
-      setNNotifiche((prev) => Math.max(0, prev - 1))
+      const current = usePfcStore.getState().nNotifiche
+      setNNotifiche(Math.max(0, current - 1))
     } catch {
       toast.error('Errore')
     }

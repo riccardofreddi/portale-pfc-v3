@@ -101,7 +101,7 @@ export default function MobileMessaggi() {
     try {
       const fd = new FormData()
       fd.append('file', file)
-      fd.append('messaggioId', id)
+      fd.append('msgId', id)
       await api.risposte.upload(fd)
       toast.success('File inviato con successo')
       setMessaggi((prev) => prev.map((m) => (m.id === id ? { ...m, haRisposta: true } : m)))

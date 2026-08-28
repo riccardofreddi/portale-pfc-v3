@@ -12,16 +12,17 @@ export default function PreviewModal() {
 
   if (!previewFile) return null
 
-  const ext = previewFile.nome.split('.').pop()?.toLowerCase() ?? ''
+  const file = previewFile
+  const ext = file.nome.split('.').pop()?.toLowerCase() ?? ''
   const isPdf = ext === 'pdf'
   const isImage = ['jpg', 'jpeg', 'png'].includes(ext)
-  const ic = ottieniIconaFile(previewFile.nome)
-  const downloadUrl = api.documenti.download(previewFile.key)
+  const ic = ottieniIconaFile(file.nome)
+  const downloadUrl = api.documenti.download(file.key)
 
   function handleDownload() {
     const a = document.createElement('a')
     a.href = downloadUrl
-    a.download = previewFile.nome
+    a.download = file.nome
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -38,7 +39,7 @@ export default function PreviewModal() {
           >
             {ic.icon}
           </span>
-          <p className="text-sm font-medium text-white truncate">{previewFile.nome}</p>
+          <p className="text-sm font-medium text-white truncate">{file.nome}</p>
         </div>
         <div className="flex items-center gap-1 ml-2">
           <button
@@ -64,14 +65,14 @@ export default function PreviewModal() {
           <iframe
             src={downloadUrl}
             className="w-full h-full border-0"
-            title={`Anteprima: ${previewFile.nome}`}
+            title={`Anteprima: ${file.nome}`}
           />
         )}
         {isImage && (
           <div className="w-full h-full flex items-center justify-center p-4 bg-slate-50">
             <img
               src={downloadUrl}
-              alt={previewFile.nome}
+              alt={file.nome}
               className="max-w-full max-h-full object-contain rounded-lg"
             />
           </div>

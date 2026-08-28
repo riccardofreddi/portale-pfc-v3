@@ -50,13 +50,48 @@ export const api = {
   },
   messaggi: {
     list: (username: string) =>
-      apiFetch<{ messaggi: Array<Record<string, unknown>> }>(`/api/messaggi?username=${encodeURIComponent(username)}`),
+      apiFetch<{ messaggi: Array<Record<string, unknown>> }>(
+        `/api/messaggi?username=${encodeURIComponent(username)}`
+      ).then((res) => {
+        const mapped = ((res.messaggi ?? []) as Array<Record<string, unknown>>).map((m) => {
+          const testo = String(m.text ?? '')
+          const titolo = testo.split('\n')[0].trim().slice(0, 80) || 'Messaggio'
+          const archiviato =
+            Array.isArray(m.archivedByClient) && (m.archivedByClient as unknown[]).length > 0
+          return {
+            id: m.id,
+            titolo,
+            corpo: testo,
+            dataInvio: m.timestamp,
+            letto: m.read,
+            archiviato,
+            richiedeUpload: m.requiresUpload,
+            uploadDescrizione: undefined,
+            haRisposta: m.uploadReceived,
+            allegatoNome: undefined,
+          }
+        })
+        return { messaggi: mapped }
+      }),
     segnaLetti: () => apiFetch('/api/messaggi?action=segna_letti', { method: 'PATCH' }),
     archivia: (id: string) => apiFetch(`/api/messaggi?id=${id}&action=archivia`, { method: 'PATCH' }),
     dearchivia: (id: string) => apiFetch(`/api/messaggi?id=${id}&action=dearchivia`, { method: 'PATCH' }),
   },
   notifiche: {
-    list: () => apiFetch<{ notifiche: Array<Record<string, unknown>> }>('/api/notifiche'),
+    list: () =>
+      apiFetch<{ notifiche: Array<Record<string, unknown>> }>('/api/notifiche').then((res) => {
+        const mapped = ((res.notifiche ?? []) as Array<Record<string, unknown>>).map((n) => ({
+          id: n.id,
+          tipo: n.type,
+          titolo: n.text,
+          corpo: n.detail,
+          letta: n.read,
+          dataCreazione: n.ts,
+          year: n.year,
+          folder: n.folder,
+        }))
+        return { notifiche: mapped }
+      }),
     segnaLette: (tipi?: string[], year?: string, folder?: string) => {
       const q = new URLSearchParams({ action: 'segna_lette' })
       if (tipi?.length) q.set('tipi', tipi.join(','))
