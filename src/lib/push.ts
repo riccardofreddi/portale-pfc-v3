@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * Portale PFC v3 — registrazione notifiche push native (FCM via Capacitor).
  *
@@ -86,22 +88,7 @@ export async function initPushChannels(): Promise<void> {
     console.log('[PUSH v3] createChannel skip:', e)
   }
 }
-        vibration: true,
-      })
-      console.log('[PUSH v3] canale push remoto registrato:', NOTIFICATION_CHANNEL_ID)
-    } catch (pushChanErr) {
-      console.error('[PUSH v3] errore creazione canale push remoto (non bloccante):', pushChanErr)
-    }
 
-    channelCreated = true
-    console.log('[PUSH v3] canali notifiche creati con successo:', NOTIFICATION_CHANNEL_ID)
-  } catch (err) {
-    console.error('[PUSH v3] errore creazione canale (non bloccante):', err)
-    // Non blocchiamo la registrazione: il plugin PushNotifications ha un
-    // canale default di fallback. Segniamo come creato per non ritentare.
-    channelCreated = true
-  }
-}
 
 /** Chiama questa funzione dopo il login avvenuto con successo, oppure al ripristino della sessione. */
 export async function registerPushForCurrentUser(): Promise<void> {
