@@ -14,7 +14,7 @@ import PreviewModal from '@/components/pfc/PreviewModal'
 import SettingsScreen from '@/components/pfc/SettingsScreen'
 import { FolderOpen, MessageSquare, Briefcase, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { setupPushListeners } from '@/lib/push'
+import { setupPushListeners, registerPushForCurrentUser } from '@/lib/push'
 
 const TABS: { id: ClienteTab; label: string; icon: React.ElementType }[] = [
   { id: 'archivio', label: 'Archivio', icon: FolderOpen },
@@ -32,13 +32,16 @@ export default function MobileClientArea() {
   const setClienteTab = usePfcStore((s) => s.setClienteTab)
   const setNNotifiche = usePfcStore((s) => s.setNNotifiche)
 
-  // Check auth on mount
+  // Check auth on mount — e se la sessione è già valida (cookie persistente)
+  // registra subito il token FCM: senza questo passo, dopo un aggiornamento
+  // dell'APK che preserva il cookie, il token non verrebbe mai inviato al backend.
   useEffect(() => {
     async function check() {
       try {
         const res = await api.auth.me()
         if (res.user && res.user.role === 'client') {
           setUser(res.user)
+          void registerPushForCurrentUser()
         } else {
           setUser(null)
         }

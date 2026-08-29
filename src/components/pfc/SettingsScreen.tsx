@@ -1,19 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePfcStore } from '@/store/pfc'
-import { X, Info, BellRing } from 'lucide-react'
+import { X, Info, BellRing, RefreshCw } from 'lucide-react'
 import { api } from '@/lib/api-client'
 import { toast } from 'sonner'
+import { pushState, registerPushForCurrentUser } from '@/lib/push'
 
 export default function SettingsScreen() {
   const settingsOpen = usePfcStore((s) => s.settingsOpen)
   const setSettingsOpen = usePfcStore((s) => s.setSettingsOpen)
   const [testing, setTesting] = useState(false)
+  const [reregistering, setReregistering] = useState(false)
+  const [diag, setDiag] = useState({ registered: pushState.registered, token: pushState.token, error: pushState.error })
+
+  // Aggiorna la diagnostica push ad ogni apertura della schermata.
+  useEffect(() => {
+    if (settingsOpen) {
+      setDiag({ registered: pushState.registered, token: pushState.token, error: pushState.error })
+    }
+  }, [settingsOpen])
 
   if (!settingsOpen) return null
 
   async function sendTestPush() {
+    // Rileggi lo stato diagnostico più fresco prima di inviare.
+    const fresh = { registered: pushState.registered, error: pushState.error }
+    if (!fresh.registered) {
+      toast.error(
+        'Token FCM non ancora registrato: la notifica non verrà recapitata. ' +
+        'Riprova tra qualche secondo o tocca "Registra di nuovo".',
+      )
+      return
+    }
     setTesting(true)
     try {
       const res = (await api.push.fcmTest()) as { ok: boolean; msg?: string }
@@ -29,6 +48,27 @@ export default function SettingsScreen() {
       setTesting(false)
     }
   }
+
+  async function reregister() {
+    setReregistering(true)
+    try {
+      await registerPushForCurrentUser()
+      // Piccolo ritardo per lasciar partire la POST del token verso il backend.
+      await new Promise((r) => setTimeout(r, 1500))
+      setDiag({ registered: pushState.registered, token: pushState.token, error: pushState.error })
+      if (pushState.registered) {
+        toast.success('Token FCM registrato correttamente.')
+      } else {
+        toast.error(pushState.error || 'Registrazione FCM non completata.')
+      }
+    } catch (err) {
+      toast.error('Errore nella registrazione FCM.')
+      console.error('[SETTINGS] reregister fallito:', err)
+    } finally {
+      setReregistering(false)
+    }
+  }
+
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col">
@@ -82,6 +122,47 @@ export default function SettingsScreen() {
               Per qualsiasi necessità di configurazione, contatta lo studio. L&apos;app è già
               collegata al server del portale.
             </p>
+
+              {/* Stato registrazione FCM (diagnostica) */}
+              <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Stato notifiche
+                  </span>
+                  <span
+                    className={
+                      'inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold ' +
+                      (diag.registered
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-amber-100 text-amber-700')
+                    }
+                  >
+                    {diag.registered ? 'Registrato' : 'Non registrato'}
+                  </span>
+                </div>
+                {diag.token ? (
+                  <p className="text-[10px] text-slate-400 break-all leading-relaxed">
+                    Token: {diag.token.slice(0, 28)}… ({diag.token.length} char)
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Nessun token FCM ricevuto dal device.
+                  </p>
+                )}
+                {diag.error && (
+                  <p className="mt-1 text-[11px] text-red-500 leading-relaxed">
+                    Errore: {diag.error}
+                  </p>
+                )}
+                <button
+                  onClick={reregister}
+                  disabled={reregistering}
+                  className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-600 font-medium text-xs hover:bg-slate-100 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={'w-3.5 h-3.5 ' + (reregistering ? 'animate-spin' : '')} />
+                  {reregistering ? 'Registrazione…' : 'Registra di nuovo'}
+                </button>
+              </div>
 
               {/* Test notifiche push */}
               <button
