@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import ClientBootstrap from "@/components/ClientBootstrap";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +46,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} antialiased bg-slate-50 text-slate-900`}
       >
+        <ClientBootstrap />
         {children}
         <SonnerToaster position="top-center" richColors closeButton />
         <script
