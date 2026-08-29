@@ -24,7 +24,7 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 import { api } from './api-client'
 
 /** ID del canale di notifica Android — deve matchare quello nel messaggio FCM. */
-const NOTIFICATION_CHANNEL_ID = 'pfc-notifications'
+const NOTIFICATION_CHANNEL_ID = 'pfc-scadenze'
 
 function isNative(): boolean {
   return Capacitor.isNativePlatform()
@@ -70,20 +70,36 @@ async function ensureNotificationChannel(): Promise<void> {
   try {
     await LocalNotifications.createChannel({
       id: NOTIFICATION_CHANNEL_ID,
-      name: 'Notifiche Portale PFC',
-      description: 'Notifiche dallo studio: nuovi documenti, messaggi, scadenze',
+      name: 'Notifiche Scadenze',
+      description: 'Notifiche per le scadenze e avvisi urgenti',
       // 'default' = suono di sistema standard
       sound: 'default',
-      // importance 4 = HIGH (heads-up + suono + vibrazione).
-      // Corrisponde ad android.app.NotificationManager.IMPORTANCE_HIGH.
-      // 5 = MAX (riservato a sveglie/chiamate, troppo invadente per notifiche messaggi).
-      importance: 4,
+      // importance 5 = MAX (heads-up + suono + vibrazione).
+      // Corrisponde ad android.app.NotificationManager.IMPORTANCE_MAX.
+      importance: 5,
       // visibility 1 = PUBLIC (mostra contenuto nella lock screen)
       visibility: 1,
       vibration: true,
     })
+
+    // Registriamo lo stesso canale anche in PushNotifications per Android FCM
+    try {
+      await PushNotifications.createChannel({
+        id: NOTIFICATION_CHANNEL_ID,
+        name: 'Notifiche Scadenze',
+        description: 'Notifiche per le scadenze e avvisi urgenti',
+        sound: 'default',
+        importance: 5,
+        visibility: 1,
+        vibration: true,
+      })
+      console.log('[PUSH v3] canale push remoto registrato:', NOTIFICATION_CHANNEL_ID)
+    } catch (pushChanErr) {
+      console.error('[PUSH v3] errore creazione canale push remoto (non bloccante):', pushChanErr)
+    }
+
     channelCreated = true
-    console.log('[PUSH v3] canale notifiche creato:', NOTIFICATION_CHANNEL_ID)
+    console.log('[PUSH v3] canali notifiche creati con successo:', NOTIFICATION_CHANNEL_ID)
   } catch (err) {
     console.error('[PUSH v3] errore creazione canale (non bloccante):', err)
     // Non blocchiamo la registrazione: il plugin PushNotifications ha un
