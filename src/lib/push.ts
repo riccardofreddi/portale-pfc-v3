@@ -181,10 +181,14 @@ export function setupPushListeners(onNotificationTap?: (url?: string) => void): 
   // LocalNotification così l'utente vede una vera notifica (suono, vibrazione,
   // nel tray) — comportamento "tipo WhatsApp".
   PushNotifications.addListener('pushNotificationReceived', async (notification: PushNotificationSchema) => {
+    // LOG AGGRESSIVO PER DEBUG
+    console.log('[DEBUG PUSH v3] Ricevuta notifica nel listener!', JSON.stringify(notification));
+
     // Usiamo title/body dal data payload se mancano nel notification (foreground Android)
-    const title = notification.title || (notification.data?.title as string) || 'Notifica'
-    const body = notification.body || (notification.data?.body as string) || ''
+    const title = (notification.data?.title as string) || 'Notifica'
+    const body = (notification.data?.body as string) || ''
     const data = (notification.data ?? {}) as Record<string, unknown>
+    
     console.log('[PUSH v3] ricevuta (foreground):', title, '- data:', data)
 
     await showForegroundNotification(title, body, data)
