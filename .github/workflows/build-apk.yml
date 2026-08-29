@@ -67,18 +67,45 @@ jobs:
 
       # --- Firma STABILE: keystore dai secret (stessa firma a ogni build) ---
       - name: Decodifica keystore di firma dai secret
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           mkdir -p android/app
-          echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > android/app/release-key.jks
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Secret KEYSTORE_B64 mancante. Aggiungilo in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          # tr -d rimuove spazi/ritorni a capo accidentali incollati nel secret
+          echo "$KEYSTORE_B64" | tr -d '[:space:]' | base64 -d > android/app/release-key.jks
+          echo "Keystore decodificato ($(wc -c < android/app/release-key.jks) byte)."
 
-      - name: Scrive keystore.properties
+      - name: Verifica keystore + scrive keystore.properties
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
+          if [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::Secret KEYSTORE_PASSWORD mancante."
+            exit 1
+          fi
+          # Fallisce subito con messaggio chiaro se password/keystore non combaciano
+          keytool -list -keystore android/app/release-key.jks \
+            -storepass "$KEYSTORE_PASSWORD" -alias portalePfc >/dev/null
+          echo "Keystore valido (alias portalePfc OK)."
           printf 'storeFile=release-key.jks\nstorePassword=%s\nkeyAlias=portalePfc\nkeyPassword=%s\n' \
-            "${{ secrets.KEYSTORE_PASSWORD }}" "${{ secrets.KEYSTORE_PASSWORD }}" > android/keystore.properties
+            "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > android/keystore.properties
 
       # --- google-services.json dai secret (NON committato -> niente secret scanning) ---
-      - name: Decodifica google-services.json dai secret
-        run: echo "${{ secrets.GOOGLE_SERVICES_B64 }}" | base64 -d > android/app/google-services.json
+      - name: Decodifica e verifica google-services.json dai secret
+        env:
+          GOOGLE_SERVICES_B64: ${{ secrets.GOOGLE_SERVICES_B64 }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_B64" ]; then
+            echo "::error::Secret GOOGLE_SERVICES_B64 mancante."
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICES_B64" | tr -d '[:space:]' | base64 -d > android/app/google-services.json
+          python3 -c "import json; json.load(open('android/app/google-services.json')); print('google-services.json: JSON valido.')"
 
       - name: Rendi gradlew eseguibile
         run: chmod +x android/gradlew
