@@ -116,7 +116,14 @@ export function setupPushListeners(onNotificationTap?: (url?: string) => void): 
 
 async function apiFetchFcmToken(token: string): Promise<void> {
   const device = Capacitor.getPlatform() === 'ios' ? 'iOS' : 'Android'
-  await api.push.fcmRegister(token, device)
+  console.log('[PUSH v3] Invio token al backend...', device, token.slice(0, 10) + '...')
+  try {
+    await api.push.fcmRegister(token, device)
+    console.log('[PUSH v3] Backend ha accettato il token')
+  } catch (err) {
+    console.error('[PUSH v3] Backend ha rifiutato il token:', err)
+    throw err
+  }
 }
 
 function showLocalToast(title: string, body: string) {

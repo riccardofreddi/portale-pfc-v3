@@ -5,7 +5,7 @@ import { api } from '@/lib/api-client'
 import { usePfcStore } from '@/store/pfc'
 import { toast } from 'sonner'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
-import { registerPushForCurrentUser } from '@/lib/push'
+import { registerPushForCurrentUser, setupPushListeners } from '@/lib/push'
 
 export default function LoginScreen() {
   const setUser = usePfcStore((s) => s.setUser)
@@ -29,6 +29,9 @@ export default function LoginScreen() {
           setUser(me.user)
           toast.success('Benvenuto!')
           // Su device nativo (Android/iOS) registra il token FCM per le push.
+          // Attiviamo i listener PRIMA di chiamare register(), così il token
+          // emesso dall'evento 'registration' non viene perso.
+          setupPushListeners()
           void registerPushForCurrentUser()
         } else {
           toast.error('Accesso riservato ai clienti')
