@@ -3,12 +3,12 @@ name: Build Android APK
 # Ricompila l'APK firmato ad ogni push su qualsiasi branch e ad ogni esecuzione manuale.
 # Scarica l'APK dalla scheda "Artifacts" della run (pagina Actions del repo).
 #
-# PREREQUISITO: configurare i secret del repository (Settings > Secrets and variables > Actions):
-#   ANDROID_KEYSTORE_BASE64   (contenuto di android/keystore-base64.txt)
-#   ANDROID_KEYSTORE_PASSWORD (pfc12345)
-#   ANDROID_KEY_ALIAS         (portalePfc)
-#   ANDROID_KEY_PASSWORD      (pfc12345)
-#   NEXT_PUBLIC_API_URL       (https://portale-pfc-v2.vercel.app)
+# La firma usa un keystore SELF-SIGNED generato al volo nella CI con `keytool`:
+# NON serve configurare nessun secret di firma.
+# Trade-off: la chiave cambia a ogni run, quindi per aggiornare l'app sul device
+# devi disinstallare la versione precedente (firma diversa). Per test/verifica
+# notifiche FCM va benissimo.
+# Opzionale: secret NEXT_PUBLIC_API_URL (default https://portale-pfc-v2.vercel.app).
 on:
   push:
     branches: ["**"]
@@ -59,20 +59,19 @@ jobs:
       - name: Capacitor sync (copia web assets nel native project)
         run: npx cap sync android
 
-      # Controllo esplicito: senza i secret la build fallirebbe in modo oscuro.
-      - name: Verifica presenza secret di firma
+      # Keystore self-signed generato nella CI: nessun secret richiesto.
+      - name: Genera keystore di firma self-signed (effimero)
         run: |
-          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ] || [ -z "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" ]; then
-            echo "ERRORE: secret ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD mancanti."
-            echo "Aggiungili in Settings > Secrets and variables > Actions, poi rilancia la build."
-            exit 1
-          fi
+          mkdir -p android/app
+          "$JAVA_HOME/bin/keytool" -genkeypair -v \
+            -keystore android/app/release-key.jks \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias portalePfc \
+            -storepass pfc12345 -keypass pfc12345 \
+            -dname "CN=Portale PFC, OU=DEV, O=PFC, L=Locale, S=Locale, C=IT"
 
-      - name: Decodifica keystore di firma da secret
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release-key.jks
-
-      - name: Scrive keystore.properties dai secret
-        run: printf 'storeFile=release-key.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" "${{ secrets.ANDROID_KEY_ALIAS }}" "${{ secrets.ANDROID_KEY_PASSWORD }}" > android/keystore.properties
+      - name: Scrive keystore.properties
+        run: printf 'storeFile=release-key.jks\nstorePassword=pfc12345\nkeyAlias=portalePfc\nkeyPassword=pfc12345\n' > android/keystore.properties
 
       - name: Rendi gradlew eseguibile
         run: chmod +x android/gradlew
