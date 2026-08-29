@@ -13,12 +13,18 @@ export default function SettingsScreen() {
   const [testing, setTesting] = useState(false)
   const [reregistering, setReregistering] = useState(false)
   const [diag, setDiag] = useState({ registered: pushState.registered, token: pushState.token, error: pushState.error })
+  // Stato lato server (verità: FCM abilitato? quanti token registrati?).
+  const [server, setServer] = useState<{ fcmEnabled: boolean; userTokens: number; serverProjectId: string | null } | null>(null)
 
   // Aggiorna la diagnostica push ad ogni apertura della schermata.
   useEffect(() => {
-    if (settingsOpen) {
-      setDiag({ registered: pushState.registered, token: pushState.token, error: pushState.error })
-    }
+    if (!settingsOpen) return
+    setDiag({ registered: pushState.registered, token: pushState.token, error: pushState.error })
+    // Interroga il backend per sapere se FCM è davvero attivo lato server.
+    api.push
+      .fcmStatus()
+      .then((s) => setServer(s))
+      .catch(() => setServer(null))
   }, [settingsOpen])
 
   if (!settingsOpen) return null
@@ -35,11 +41,14 @@ export default function SettingsScreen() {
     }
     setTesting(true)
     try {
-      const res = (await api.push.fcmTest()) as { ok: boolean; msg?: string }
+      const res = (await api.push.fcmTest()) as { ok: boolean; msg?: string; sent?: number; tokenCount?: number }
       if (res.ok) {
-        toast.success('Notifica di test inviata! Controlla il telefono.')
+        toast.success(
+          `Notifica di test inviata! (${res.sent ?? 1}/${res.tokenCount ?? 1}) Controlla il telefono.`,
+        )
       } else {
-        toast.error(res.msg ?? 'Invio fallito.')
+        // Il backend spiega sempre il motivo (es. "nessun token", "FCM disabilitato").
+        toast.error(res.msg ?? 'Invio fallito: nessun token registrato o FCM non attivo.')
       }
     } catch (err) {
       toast.error('Errore durante il test delle notifiche.')
@@ -154,6 +163,26 @@ export default function SettingsScreen() {
                     Errore: {diag.error}
                   </p>
                 )}
+                {server && (
+                  <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Server FCM:{' '}
+                      <span className={server.fcmEnabled ? 'text-emerald-600 font-semibold' : 'text-red-500 font-semibold'}>
+                        {server.fcmEnabled ? 'attivo' : 'NON CONFIGURATO'}
+                      </span>
+                    </p>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Token registrati sul server: {server.userTokens}
+                    </p>
+                  </div>
+                )}
+                {server && !server.fcmEnabled && (
+                  <p className="mt-1 text-[11px] text-red-500 leading-relaxed">
+                    Il server non può inviare push: mancano le credenziali Firebase.
+                    Contatta lo studio.
+                  </p>
+                )}
+
                 <button
                   onClick={reregister}
                   disabled={reregistering}

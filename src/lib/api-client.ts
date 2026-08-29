@@ -115,6 +115,10 @@ export const api = {
     fcmUnregister: (token: string) =>
       apiFetch('/api/push/fcm', { method: 'DELETE', body: JSON.stringify({ token }) }),
     fcmTest: () => apiFetch('/api/push/fcm/test', { method: 'POST' }),
+    fcmStatus: () =>
+      apiFetch<{ fcmEnabled: boolean; serverProjectId: string | null; userTokens: number }>(
+        '/api/push/fcm/status',
+      ),
   },
   audit: {
     meList: (limit?: number) => {
