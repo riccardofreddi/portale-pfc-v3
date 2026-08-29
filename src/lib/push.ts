@@ -53,42 +53,31 @@ let localNotifIdCounter = 1
 
 /**
  * Crea il canale di notifica Android (richiesto su Android 8+/API 26+).
- * Idempotente: se il canale esiste già, Android ignora la creazione.
- * Il canale ha importanza HIGH → suono + vibrazione + heads-up.
+ * Idempotente. Il canale ha importanza HIGH → suono + vibrazione + heads-up.
  */
 async function ensureNotificationChannel(): Promise<void> {
   if (channelCreated) return
-  if (!isNative()) {
-    channelCreated = true
-    return
-  }
-  // createChannel è Android-only; su iOS è un no-op silente.
-  if (Capacitor.getPlatform() !== 'android') {
+  if (!isNative() || Capacitor.getPlatform() !== 'android') {
     channelCreated = true
     return
   }
   try {
+    // Configurazione massima per garantire suono e heads-up
     await LocalNotifications.createChannel({
       id: NOTIFICATION_CHANNEL_ID,
       name: 'Notifiche Portale PFC',
-      description: 'Notifiche dallo studio: nuovi documenti, messaggi, scadenze',
-      // 'default' = suono di sistema standard
-      sound: 'default',
-      // importance 4 = HIGH (heads-up + suono + vibrazione).
-      // Corrisponde ad android.app.NotificationManager.IMPORTANCE_HIGH.
-      // 5 = MAX (riservato a sveglie/chiamate, troppo invadente per notifiche messaggi).
-      importance: 4,
-      // visibility 1 = PUBLIC (mostra contenuto nella lock screen)
-      visibility: 1,
-      vibration: true,
+      description: 'Notifiche dallo studio',
+      sound: 'default', // Assicura il suono
+      importance: 4,    // HIGH importance (heads-up)
+      visibility: 1,    // PUBLIC
+      vibration: true,  // Vibrazione
     })
     channelCreated = true
-    console.log('[PUSH v3] canale notifiche creato:', NOTIFICATION_CHANNEL_ID)
+    console.log('[PUSH v3] Canale notifiche configurato correttamente.')
   } catch (err) {
-    console.error('[PUSH v3] errore creazione canale (non bloccante):', err)
-    // Non blocchiamo la registrazione: il plugin PushNotifications ha un
-    // canale default di fallback. Segniamo come creato per non ritentare.
-    channelCreated = true
+    console.error('[PUSH v3] ERRORE CRITICO creazione canale:', err)
+    // Se fallisce, forziamo true per non bloccare tutto, ma segnaliamo il problema
+    channelCreated = true 
   }
 }
 
@@ -225,8 +214,8 @@ async function apiFetchFcmToken(token: string): Promise<void> {
 }
 
 /**
- * Mostra una notifica locale nel system tray. Usata per le notifiche FCM
- * ricevute in foreground (Android non le mostra automaticamente).
+ * Mostra una notifica locale nel system tray. 
+ * Abbiamo aggiunto l'attributo `sound` direttamente nello schedule per assicurarci che suoni.
  */
 async function showForegroundNotification(
   title: string,
@@ -234,25 +223,26 @@ async function showForegroundNotification(
   data: Record<string, unknown>,
 ): Promise<void> {
   try {
+    // Aggiungiamo un log per debuggare il suono e il canale
+    console.log('[PUSH v3] Tentativo schedule notifica:', { title, channelId: NOTIFICATION_CHANNEL_ID });
+    
     await LocalNotifications.schedule({
       notifications: [
         {
-          // ID univoco (Int32). Counter crescente evita collisioni.
           id: localNotifIdCounter++,
           title,
           body,
-          // Canale creato in ensureNotificationChannel
           channelId: NOTIFICATION_CHANNEL_ID,
-          sound: 'default',
-          // Preserva l'url per il tap
+          // Forza il suono qui, non solo nel canale
+          sound: 'default', 
+          // Forza l'importanza della notifica singola (heads-up)
+          importance: 'high',
           extra: data,
-          // Mostra subito, non programmata — omitting schedule = immediata
         },
       ],
     })
   } catch (err) {
-    console.error('[PUSH v3] errore LocalNotifications.schedule (fallback a toast):', err)
-    // Fallback: mostra almeno un toast se le notifiche locali falliscono
+    console.error('[PUSH v3] Errore critico LocalNotifications.schedule:', err)
     showLocalToast(title, body)
   }
 }
