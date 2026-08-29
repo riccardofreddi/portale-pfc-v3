@@ -3,7 +3,7 @@
 import { api } from '@/lib/api-client'
 import { usePfcStore } from '@/store/pfc'
 import { getInitials } from '@/lib/pfc-utils'
-import { Bell, LogOut } from 'lucide-react'
+import { Bell, LogOut, Settings } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ export default function MobileTopBar() {
   const user = usePfcStore((s) => s.user)
   const nNotifiche = usePfcStore((s) => s.nNotifiche)
   const setShowNotifPanel = usePfcStore((s) => s.setShowNotifPanel)
+  const setSettingsOpen = usePfcStore((s) => s.setSettingsOpen)
   const setUser = usePfcStore((s) => s.setUser)
 
   async function handleLogout() {
@@ -29,18 +30,18 @@ export default function MobileTopBar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 h-14 flex items-center justify-between px-4 glass-card border-b border-white/40">
+    <header className="sticky top-0 z-40 h-14 flex items-center justify-between px-4 safe-top bg-emerald-600 text-white shadow-md border-b border-emerald-700/40">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-sm">
+        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shadow-sm">
           <span className="text-white font-extrabold text-sm tracking-tight">PF</span>
         </div>
-        <span className="font-bold text-slate-800 text-base">Portale PFC</span>
+        <span className="font-bold text-white text-base">Portale PFC</span>
       </div>
 
       <div className="flex items-center gap-1">
         <button
           onClick={() => setShowNotifPanel(true)}
-          className="relative flex items-center justify-center w-11 h-11 -mr-1 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+          className="relative flex items-center justify-center w-11 h-11 -mr-1 rounded-xl text-white/90 hover:text-white hover:bg-white/10 active:bg-white/20 transition-colors"
           aria-label="Notifiche"
         >
           <Bell className="w-5 h-5" />
@@ -54,7 +55,7 @@ export default function MobileTopBar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm ml-0.5 active:scale-95 transition-transform"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/20 text-white font-bold text-sm ml-0.5 active:scale-95 transition-transform"
               aria-label="Menu utente"
             >
               {user ? getInitials(user.name) : '?'}
@@ -66,6 +67,13 @@ export default function MobileTopBar() {
               <p className="text-xs text-slate-500 truncate">@{user?.username}</p>
             </div>
             <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setSettingsOpen(true)}
+              className="cursor-pointer"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Impostazioni
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleLogout}
               className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"

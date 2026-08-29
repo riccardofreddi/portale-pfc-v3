@@ -28,7 +28,10 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'LIGHT',
-      backgroundColor: '#047857',
+      backgroundColor: '#059669',
+      // Don't draw the WebView under the native status bar: otherwise the
+      // top app bar gets hidden behind the clock/battery on Android.
+      overlaysWebView: false,
     },
   },
 };

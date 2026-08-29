@@ -133,6 +133,18 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+/* Top safe area (status bar) — also applied on Android when the WebView
+   is rendered under the native status bar. */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+}
+/* Fallback for Android where safe-area-inset-top is 0 but the status bar
+   still overlaps the WebView (Capacitor overlaysWebView = true). */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
 
 /* ===== Archivio — Animazioni & Design System ===== */
 
