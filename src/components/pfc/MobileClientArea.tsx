@@ -51,14 +51,11 @@ export default function MobileClientArea() {
   // dell'APK che preserva il cookie, il token non verrebbe mai inviato al backend.
   useEffect(() => {
     async function check() {
-      // Registra sempre il device alle push FCM, anche se l'utente non è ancora loggato.
-      // Il token verrà inviato al backend e, al momento del login, l'app lo assocerà all'utente.
-      void registerPushForCurrentUser()
-      
       try {
         const res = await api.auth.me()
         if (res.user && res.user.role === 'client') {
           setUser(res.user)
+          void registerPushForCurrentUser()
         } else {
           setUser(null)
         }
