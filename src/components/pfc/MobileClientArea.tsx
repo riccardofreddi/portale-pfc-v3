@@ -32,6 +32,20 @@ export default function MobileClientArea() {
   const setClienteTab = usePfcStore((s) => s.setClienteTab)
   const setNNotifiche = usePfcStore((s) => s.setNNotifiche)
 
+  // Listener push nativi (FCM) — solo su device nativo (Android/iOS).
+  // Van montati PRIMA di registerPushForCurrentUser: il token generato da
+  // register() viene intercettato dall'evento 'registration' che attachiamo qui.
+  useEffect(() => {
+    setupPushListeners((url) => {
+      // Tap su notifica: vai alla schermata Notifiche (o all'url se presente).
+      if (url && url !== '/') {
+        window.location.href = url
+      } else {
+        setClienteTab('attivita')
+      }
+    })
+  }, [setClienteTab])
+
   // Check auth on mount — e se la sessione è già valida (cookie persistente)
   // registra subito il token FCM: senza questo passo, dopo un aggiornamento
   // dell'APK che preserva il cookie, il token non verrebbe mai inviato al backend.
@@ -53,18 +67,6 @@ export default function MobileClientArea() {
     }
     check()
   }, [setUser, setLoadingUser])
-
-  // Listener push native (FCM) — solo su device nativo (Android/iOS).
-  useEffect(() => {
-    setupPushListeners((url) => {
-      // Tap su notifica: vai alla schermata Notifiche (o all'url se presente).
-      if (url && url !== '/') {
-        window.location.href = url
-      } else {
-        setClienteTab('attivita')
-      }
-    })
-  }, [setClienteTab])
 
   // Poll notifications
   useEffect(() => {

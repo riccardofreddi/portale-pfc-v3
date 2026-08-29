@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
+import { unregisterPush } from '@/lib/push'
 
 export default function MobileTopBar() {
   const user = usePfcStore((s) => s.user)
@@ -20,6 +21,9 @@ export default function MobileTopBar() {
   const setUser = usePfcStore((s) => s.setUser)
 
   async function handleLogout() {
+    // Rimuovi il token FCM dal backend PRIMA del logout, così l'utente
+    // non riceve più notifiche push. Su web è un no-op.
+    await unregisterPush().catch(() => {})
     try {
       await api.auth.logout()
     } catch {
