@@ -14,7 +14,7 @@ import PreviewModal from '@/components/pfc/PreviewModal'
 import SettingsScreen from '@/components/pfc/SettingsScreen'
 import { FolderOpen, MessageSquare, Briefcase, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { setupPushListeners, registerPushForCurrentUser } from '@/lib/push'
+import { setupPushListeners, registerPushForCurrentUser, initPushChannels } from '@/lib/push'
 
 const TABS: { id: ClienteTab; label: string; icon: React.ElementType }[] = [
   { id: 'archivio', label: 'Archivio', icon: FolderOpen },
@@ -36,6 +36,9 @@ export default function MobileClientArea() {
   // Van montati PRIMA di registerPushForCurrentUser: il token generato da
   // register() viene intercettato dall'evento 'registration' che attachiamo qui.
   useEffect(() => {
+    // Canali devono esistere prima che arrivi la prima push del server
+    void initPushChannels()
+    
     setupPushListeners((url) => {
       // Tap su notifica: vai alla schermata Notifiche (o all'url se presente).
       if (url && url !== '/') {

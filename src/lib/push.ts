@@ -24,7 +24,7 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 import { api } from './api-client'
 
 /** ID del canale di notifica Android — deve matchare quello nel messaggio FCM. */
-const NOTIFICATION_CHANNEL_ID = 'pfc-scadenze'
+const NOTIFICATION_CHANNEL_ID = 'pfc-alerts-v2'
 
 function isNative(): boolean {
   return Capacitor.isNativePlatform()
@@ -50,47 +50,42 @@ let listenersAttached = false
 let channelCreated = false
 let localNotifIdCounter = 1
 
-
 /**
- * Crea il canale di notifica Android (richiesto su Android 8+/API 26+).
- * Idempotente: se il canale esiste già, Android ignora la creazione.
- * Il canale ha importanza HIGH → suono + vibrazione + heads-up.
+ * Canali di notifica Android. DEVONO esistere PRIMA che arrivi la prima push,
+ * altrimenti FCM li tratta come "canale sconosciuto" e la notifica viene
+ * consegnata silenziosamente sul canale di fallback.
+ *
+ * ⚠️ Un canale una volta creato NON è più modificabile. Se cambi importance/sound
+ * devi ANCHE cambiare l'id (es. -v3). Motivo per cui questo si chiama "-v2".
+ *
+ * NON specificare `sound` come stringa: se il file resource non esiste il canale
+ * diventa MUTO. Omettere `sound` + `importance: 5` = suono di sistema di default.
  */
-async function ensureNotificationChannel(): Promise<void> {
+export async function initPushChannels(): Promise<void> {
   if (channelCreated) return
-  if (!isNative()) {
-    channelCreated = true
-    return
-  }
-  // createChannel è Android-only; su iOS è un no-op silente.
-  if (Capacitor.getPlatform() !== 'android') {
-    channelCreated = true
-    return
-  }
+  channelCreated = true
+  if (!isNative()) return
+  if (Capacitor.getPlatform() !== 'android') return
   try {
-    await LocalNotifications.createChannel({
+    const channel = {
       id: NOTIFICATION_CHANNEL_ID,
-      name: 'Notifiche Scadenze',
-      description: 'Notifiche per le scadenze e avvisi urgenti',
-      // 'default' = suono di sistema standard
-      sound: 'default',
-      // importance 5 = MAX (heads-up + suono + vibrazione).
-      // Corrisponde ad android.app.NotificationManager.IMPORTANCE_MAX.
-      importance: 5,
-      // visibility 1 = PUBLIC (mostra contenuto nella lock screen)
-      visibility: 1,
+      name: 'Avvisi Portale PFC',
+      description: 'Scadenze, messaggi e avvisi dello studio',
+      importance: 5 as const, // MAX → heads-up + suono di sistema
+      visibility: 1 as const,
       vibration: true,
-    })
-
-    // Registriamo lo stesso canale anche in PushNotifications per Android FCM
-    try {
-      await PushNotifications.createChannel({
-        id: NOTIFICATION_CHANNEL_ID,
-        name: 'Notifiche Scadenze',
-        description: 'Notifiche per le scadenze e avvisi urgenti',
-        sound: 'default',
-        importance: 5,
-        visibility: 1,
+      lights: true,
+      // NIENTE `sound`: senza questa proprietà Android usa il suono di sistema
+      // Con `sound: 'default'` cercherebbe un file raw/default.mp3 inesistente
+      // e il canale resterebbe MUTO per sempre.
+    }
+    await PushNotifications.createChannel(channel)
+    await LocalNotifications.createChannel(channel)
+    console.log('[PUSH v3] Canale pfc-alerts-v2 creato')
+  } catch (e) {
+    console.log('[PUSH v3] createChannel skip:', e)
+  }
+}
         vibration: true,
       })
       console.log('[PUSH v3] canale push remoto registrato:', NOTIFICATION_CHANNEL_ID)
@@ -113,9 +108,8 @@ export async function registerPushForCurrentUser(): Promise<void> {
   if (!isNative()) return // su web le push le gestisce il service worker
   try {
     // Crea il canale PRIMA di registrare: le notifiche in arrivo potrebbero
-    // arrivare prima che il canale sia pronto, e senza canale Android le
-    // scarta silenziosamente.
-    await ensureNotificationChannel()
+    // Canali PRIMA di tutto (idempotente, safe da chiamare più volte)
+    await initPushChannels()
 
     const perm = await PushNotifications.checkPermissions()
     let status = perm.receive
@@ -253,9 +247,9 @@ async function showForegroundNotification(
           id: localNotifIdCounter++,
           title,
           body,
-          // Canale creato in ensureNotificationChannel
+          // Canale creato in initPushChannels
           channelId: NOTIFICATION_CHANNEL_ID,
-          sound: 'default',
+          // NIENTE `sound: 'default'` — usa quello del canale
           // Preserva l'url per il tap
           extra: data,
           // Mostra subito, non programmata — omitting schedule = immediata
