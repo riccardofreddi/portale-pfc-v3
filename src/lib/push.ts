@@ -57,35 +57,31 @@ let localNotifIdCounter = 1
  * altrimenti FCM li tratta come "canale sconosciuto" e la notifica viene
  * consegnata silenziosamente sul canale di fallback.
  *
- * ⚠️ Un canale una volta creato NON è più modificabile. Se cambi importance/sound
- * devi ANCHE cambiare l'id (es. -v3). Motivo per cui questo si chiama "-v2".
- *
- * NON specificare `sound` come stringa: se il file resource non esiste il canale
- * diventa MUTO. Omettere `sound` + `importance: 5` = suono di sistema di default.
+ * ⚠️ Il canale viene ora creato a livello nativo in MainActivity.java all'avvio.
+ * Questa funzione rimane come fallback di sicurezza per aggiornamenti futuri.
  */
 export async function initPushChannels(): Promise<void> {
   if (channelCreated) return
   channelCreated = true
   if (!isNative()) return
   if (Capacitor.getPlatform() !== 'android') return
+  
+  // Il canale è già creato in Java, ma assicuriamo la configurazione lato
+  // LocalNotifications per il foreground handling.
   try {
     const channel = {
       id: NOTIFICATION_CHANNEL_ID,
       name: 'Avvisi Portale PFC',
       description: 'Scadenze, messaggi e avvisi dello studio',
-      importance: 5 as const, // MAX → heads-up + suono di sistema
+      importance: 5 as const,
       visibility: 1 as const,
       vibration: true,
       lights: true,
-      // NIENTE `sound`: senza questa proprietà Android usa il suono di sistema
-      // Con `sound: 'default'` cercherebbe un file raw/default.mp3 inesistente
-      // e il canale resterebbe MUTO per sempre.
     }
-    await PushNotifications.createChannel(channel)
     await LocalNotifications.createChannel(channel)
-    console.log('[PUSH v3] Canale pfc-alerts-v2 creato')
+    console.log('[PUSH v3] Canale local notifications configurato')
   } catch (e) {
-    console.log('[PUSH v3] createChannel skip:', e)
+    console.log('[PUSH v3] initPushChannels skip:', e)
   }
 }
 

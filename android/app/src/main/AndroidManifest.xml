@@ -24,6 +24,13 @@
 
         </activity>
 
+        <!-- Canale di default per Firebase Messaging: se il payload non specifica
+             channelId o quello indicato non esiste, FCM usa questo. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="pfc-alerts-v2" />
+
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
