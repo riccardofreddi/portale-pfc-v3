@@ -1,21 +1,27 @@
 name: Build Android APK
 
 # Ricompila l'APK firmato ad ogni push su qualsiasi branch e ad ogni esecuzione manuale.
-# Scarica l'APK dalla scheda "Artifacts" della run (pagina Actions del repo).
 #
-# La firma usa un keystore SELF-SIGNED generato al volo nella CI con `keytool`:
-# NON serve configurare nessun secret di firma.
-# Trade-off: la chiave cambia a ogni run, quindi per aggiornare l'app sul device
-# devi disinstallare la versione precedente (firma diversa). Per test/verifica
-# notifiche FCM va benissimo.
-# Opzionale: secret NEXT_PUBLIC_API_URL (default https://portale-pfc-v2.vercel.app).
+# Firma STABILE: il keystore e la password arrivano dai GitHub Secrets
+# (KEYSTORE_B64, KEYSTORE_PASSWORD), quindi la firma NON cambia tra le build.
+# => puoi installare il nuovo APK SOPRA la versione precedente, senza disinstallare.
+#
+# Dove trovare l'APK: viene pubblicato su una GitHub Release chiamata "latest-apk"
+# (pagina "Releases" del repo, sempre lo stesso posto). C'e' anche l'artifact di
+# fallback nella scheda Artifacts della singola run (pagina Actions).
+#
+# Secrets richiesti nel repo (Settings -> Secrets and variables -> Actions):
+#   - KEYSTORE_B64        : base64 del keystore (android/app/release-key.jks)
+#   - KEYSTORE_PASSWORD   : password del keystore (store+key)
+#   - GOOGLE_SERVICES_B64 : base64 di android/app/google-services.json (NON committato)
+#   - NEXT_PUBLIC_API_URL : opzionale (default https://portale-pfc-v2.vercel.app)
 on:
   push:
     branches: ["**"]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # necessario per creare/aggiornare la Release
 
 jobs:
   build:
@@ -59,19 +65,20 @@ jobs:
       - name: Capacitor sync (copia web assets nel native project)
         run: npx cap sync android
 
-      # Keystore self-signed generato nella CI: nessun secret richiesto.
-      - name: Genera keystore di firma self-signed (effimero)
+      # --- Firma STABILE: keystore dai secret (stessa firma a ogni build) ---
+      - name: Decodifica keystore di firma dai secret
         run: |
           mkdir -p android/app
-          "$JAVA_HOME/bin/keytool" -genkeypair -v \
-            -keystore android/app/release-key.jks \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias portalePfc \
-            -storepass pfc12345 -keypass pfc12345 \
-            -dname "CN=Portale PFC, OU=DEV, O=PFC, L=Locale, S=Locale, C=IT"
+          echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > android/app/release-key.jks
 
       - name: Scrive keystore.properties
-        run: printf 'storeFile=release-key.jks\nstorePassword=pfc12345\nkeyAlias=portalePfc\nkeyPassword=pfc12345\n' > android/keystore.properties
+        run: |
+          printf 'storeFile=release-key.jks\nstorePassword=%s\nkeyAlias=portalePfc\nkeyPassword=%s\n' \
+            "${{ secrets.KEYSTORE_PASSWORD }}" "${{ secrets.KEYSTORE_PASSWORD }}" > android/keystore.properties
+
+      # --- google-services.json dai secret (NON committato -> niente secret scanning) ---
+      - name: Decodifica google-services.json dai secret
+        run: echo "${{ secrets.GOOGLE_SERVICES_B64 }}" | base64 -d > android/app/google-services.json
 
       - name: Rendi gradlew eseguibile
         run: chmod +x android/gradlew
@@ -79,9 +86,22 @@ jobs:
       - name: Build release APK (firmato)
         run: cd android && ./gradlew assembleRelease --no-daemon
 
-      - name: Upload APK come artifact
+      - name: Upload APK come artifact (fallback)
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+
+      - name: Pubblica APK su GitHub Release "latest-apk"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk
+          name: App APK (latest)
+          make_latest: true
+          body: |
+            APK firmato generato automaticamente dalla CI.
+            Installa sul telefono: sovrascrive la versione precedente (firma stabile, stessa chiave).
+          files: android/app/build/outputs/apk/release/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -68,3 +68,6 @@ package-lock.json
 *.jks
 *.keystore
 
+
+# google-services.json NON committato: arriva dalla CI via secret GOOGLE_SERVICES_B64
+/android/app/google-services.json
