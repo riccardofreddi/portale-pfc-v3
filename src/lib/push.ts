@@ -24,7 +24,7 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 import { api } from './api-client'
 
 /** ID del canale di notifica Android — deve matchare quello nel messaggio FCM. */
-const NOTIFICATION_CHANNEL_ID = 'pfc-notifications'
+const NOTIFICATION_CHANNEL_ID = 'pfc-notifications-v2'
 
 function isNative(): boolean {
   return Capacitor.isNativePlatform()
