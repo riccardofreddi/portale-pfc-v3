@@ -47,7 +47,9 @@ export const pushState = {
 // I listener FCM vanno attaccati una sola volta (addListener accumula handler).
 let listenersAttached = false
 // Il canale va creato una sola volta per sessione.
-let channelsCreated = false
+let channelCreated = false
+let localNotifIdCounter = 1
+
 
 /**
  * Crea il canale di notifica Android (richiesto su Android 8+/API 26+).
