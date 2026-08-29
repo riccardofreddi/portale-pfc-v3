@@ -53,3 +53,18 @@ server.log
 # Skills directory
 /skills/
 package-lock.json
+
+# Capacitor Android build outputs + signing secrets (NON committare il keystore!)
+/android/app/release-key.jks
+/android/keystore.properties
+# Keystore codificato in base64 (secret per GitHub Actions) — NON committare!
+/android/keystore-base64.txt
+/out
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/captures/
+/android/local.properties
+*.jks
+*.keystore
+

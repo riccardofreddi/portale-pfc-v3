@@ -1,0 +1,64 @@
+name: Build Android APK
+
+# Ricompila l'APK firmato ad ogni push su qualsiasi branch e ad ogni esecuzione manuale.
+# Scarica l'APK dalla scheda "Artifacts" della run (pagina Actions del repo).
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    env:
+      # URL del backend v2 usato in fase di build (static export).
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'https://portale-pfc-v2.vercel.app' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup JDK 21 (Microsoft)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "microsoft"
+          java-version: "21"
+
+      - name: Setup Android SDK + accetta licenze
+        uses: android-actions/setup-android@v3
+
+      - name: Install npm dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build web assets (Next.js static export -> out/)
+        run: npm run build
+
+      - name: Capacitor sync (copia web assets nel native project)
+        run: npx cap sync android
+
+      - name: Decodifica keystore di firma da secret
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release-key.jks
+
+      - name: Scrive keystore.properties dai secret
+        run: printf 'storeFile=release-key.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" "${{ secrets.ANDROID_KEY_ALIAS }}" "${{ secrets.ANDROID_KEY_PASSWORD }}" > android/keystore.properties
+
+      - name: Rendi gradlew eseguibile
+        run: chmod +x android/gradlew
+
+      - name: Build release APK (firmato)
+        run: cd android && ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APK come artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error

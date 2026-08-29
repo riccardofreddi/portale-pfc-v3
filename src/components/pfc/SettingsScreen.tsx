@@ -1,13 +1,34 @@
 'use client'
 
+import { useState } from 'react'
 import { usePfcStore } from '@/store/pfc'
-import { X, Info } from 'lucide-react'
+import { X, Info, BellRing } from 'lucide-react'
+import { api } from '@/lib/api-client'
+import { toast } from 'sonner'
 
 export default function SettingsScreen() {
   const settingsOpen = usePfcStore((s) => s.settingsOpen)
   const setSettingsOpen = usePfcStore((s) => s.setSettingsOpen)
+  const [testing, setTesting] = useState(false)
 
   if (!settingsOpen) return null
+
+  async function sendTestPush() {
+    setTesting(true)
+    try {
+      const res = (await api.push.fcmTest()) as { ok: boolean; msg?: string }
+      if (res.ok) {
+        toast.success('Notifica di test inviata! Controlla il telefono.')
+      } else {
+        toast.error(res.msg ?? 'Invio fallito.')
+      }
+    } catch (err) {
+      toast.error('Errore durante il test delle notifiche.')
+      console.error('[SETTINGS] test push fallito:', err)
+    } finally {
+      setTesting(false)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col">
@@ -61,6 +82,21 @@ export default function SettingsScreen() {
               Per qualsiasi necessità di configurazione, contatta lo studio. L&apos;app è già
               collegata al server del portale.
             </p>
+
+              {/* Test notifiche push */}
+              <button
+                onClick={sendTestPush}
+                disabled={testing}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500 text-white font-semibold text-sm shadow-sm hover:bg-emerald-600 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <BellRing className="w-4 h-4" />
+                {testing ? 'Invio in corso…' : 'Invia notifica di test'}
+              </button>
+              <p className="text-[11px] text-slate-400 leading-relaxed -mt-2">
+                Invia una notifica FCM di prova al tuo telefono per verificare che le push
+                funzionino. Devi aver effettuato il login con l&apos;app installata.
+              </p>
+
           </div>
         </div>
       </div>

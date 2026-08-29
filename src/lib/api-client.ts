@@ -114,6 +114,7 @@ export const api = {
       apiFetch('/api/push/fcm', { method: 'POST', body: JSON.stringify({ token, device }) }),
     fcmUnregister: (token: string) =>
       apiFetch('/api/push/fcm', { method: 'DELETE', body: JSON.stringify({ token }) }),
+    fcmTest: () => apiFetch('/api/push/fcm/test', { method: 'POST' }),
   },
   audit: {
     meList: (limit?: number) => {
