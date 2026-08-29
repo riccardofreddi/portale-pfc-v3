@@ -2,6 +2,13 @@ name: Build Android APK
 
 # Ricompila l'APK firmato ad ogni push su qualsiasi branch e ad ogni esecuzione manuale.
 # Scarica l'APK dalla scheda "Artifacts" della run (pagina Actions del repo).
+#
+# PREREQUISITO: configurare i secret del repository (Settings > Secrets and variables > Actions):
+#   ANDROID_KEYSTORE_BASE64   (contenuto di android/keystore-base64.txt)
+#   ANDROID_KEYSTORE_PASSWORD (pfc12345)
+#   ANDROID_KEY_ALIAS         (portalePfc)
+#   ANDROID_KEY_PASSWORD      (pfc12345)
+#   NEXT_PUBLIC_API_URL       (https://portale-pfc-v2.vercel.app)
 on:
   push:
     branches: ["**"]
@@ -32,8 +39,16 @@ jobs:
           distribution: "microsoft"
           java-version: "21"
 
-      - name: Setup Android SDK + accetta licenze
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+
+      # Il runner parte pulito: servono le licenze + i pacchetti SDK (compileSdk 35).
+      - name: Accetta licenze e installa Android SDK 35 + build-tools 35.0.0
+        run: |
+          SDKMGR=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -n1)
+          echo "sdkmanager: $SDKMGR"
+          yes | "$SDKMGR" --licenses > /dev/null || true
+          "$SDKMGR" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install npm dependencies
         run: npm install --no-audit --no-fund
@@ -43,6 +58,15 @@ jobs:
 
       - name: Capacitor sync (copia web assets nel native project)
         run: npx cap sync android
+
+      # Controllo esplicito: senza i secret la build fallirebbe in modo oscuro.
+      - name: Verifica presenza secret di firma
+        run: |
+          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ] || [ -z "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" ]; then
+            echo "ERRORE: secret ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD mancanti."
+            echo "Aggiungili in Settings > Secrets and variables > Actions, poi rilancia la build."
+            exit 1
+          fi
 
       - name: Decodifica keystore di firma da secret
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release-key.jks
