@@ -120,18 +120,13 @@ export async function registerPushForCurrentUser(): Promise<void> {
 export async function unregisterPush(): Promise<void> {
   if (!isNative()) return
   try {
-    // Rimuovi il token FCM dal backend (evita push a un utente sloggato)
-    if (pushState.token) {
-      await api.push.fcmUnregister(pushState.token).catch(() => {})
-    }
+    // NON chiamare api.push.fcmUnregister: vogliamo ricevere push
+    // anche da non loggati (nuovi documenti / scadenze).
     // Pulisci le notifiche push consegnate
     await PushNotifications.removeAllDeliveredNotifications()
     // Pulisci anche le notifiche locali create in foreground
     await LocalNotifications.removeAllDeliveredNotifications().catch(() => {})
-    // Reset stato
-    pushState.registered = false
-    pushState.token = ''
-    pushState.error = ''
+    // Mantieni pushState.token e registered: il token resta valido
   } catch (err) {
     console.error('[PUSH v3] errore unregister (ignorato):', err)
   }
